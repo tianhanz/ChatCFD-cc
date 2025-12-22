@@ -1,9 +1,14 @@
-from openai import OpenAI
 import os
-import config
-from datetime import datetime
-import tiktoken
 import json
+from datetime import datetime
+
+import tiktoken
+from openai import OpenAI
+from pydantic import BaseModel, Field
+from langchain.output_parsers import PydanticOutputParser
+
+import config
+
 
 def estimate_tokens(text: str, model_name: str) -> int:
     """Estimate token count using tiktoken"""
@@ -64,21 +69,52 @@ class BaseQA_deepseek_V3:
         self._initialized = True
 
     def _setup_qa_interface(self):
-        def get_deepseekV3_response(messages):
+        def get_deepseekV3_response(
+            messages,
+            response_format: PydanticOutputParser = None,
+            retry_times: int = 3
+        ):
             client = OpenAI(
-                api_key=os.environ.get("DEEPSEEK_V3_KEY"), 
+                api_key=os.environ.get("DEEPSEEK_V3_KEY"),
                 base_url=os.environ.get("DEEPSEEK_V3_BASE_URL")
             )
 
-            chat_completion = client.chat.completions.create(
-                messages=messages,
-                model=os.environ.get("DEEPSEEK_V3_MODEL_NAME"),
-                temperature=config.V3_temperature,
-                stream=False
-            )
-            
+            if response_format:  # the prompt must contain “{response_format}”
+                try:
+                    parser = PydanticOutputParser(pydantic_object=response_format)
+                    messages[-1]["content"] = messages[-1]["content"].format(
+                        response_format=parser.get_format_instructions()
+                    )
+                except Exception:
+                    response_format = None  # fall back to plain text if formatting fails
+
+            for attempt in range(retry_times):
+                try:
+                    # send request
+                    chat_completion = client.chat.completions.create(
+                        messages=messages,
+                        model=os.environ.get("DEEPSEEK_V3_MODEL_NAME"),
+                        temperature=config.R1_temperature,
+                        stream=False
+                    )
+
+                    # parse response if format was specified
+                    if response_format:
+                        response = parser.parse(chat_completion.choices[0].message.content)
+                        if response is None:
+                            raise ValueError("Parsed response is None")
+                    else:
+                        response = chat_completion.choices[0].message.content
+                    break  # success: exit retry loop
+
+                except Exception as e:
+                    if attempt < retry_times - 1:
+                        continue
+                    print("Error during DeepSeek-V3 request:", e)
+                    raise e
+
             return {
-                "content": chat_completion.choices[0].message.content,
+                "content": json.dumps(response) if response_format else response,
                 "prompt_tokens": chat_completion.usage.prompt_tokens,
                 "completion_tokens": chat_completion.usage.completion_tokens
             }
@@ -114,9 +150,12 @@ class QA_Context_deepseek_V3(BaseQA_deepseek_V3):
         return result["content"]
 
 class QA_NoContext_deepseek_V3(BaseQA_deepseek_V3):
-    def ask(self, question: str):
-        messages = [{"role": "user", "content": question}]
-        result = self.qa_interface(messages)
+    def ask(self, question: str|list, response_format:PydanticOutputParser=None, retry_times:int=3):
+        if isinstance(question, list):
+            messages = question
+        else:
+            messages = [{"role": "user", "content": question}]
+        result = self.qa_interface(messages, response_format=response_format, retry_times=retry_times)
         
         GlobalLogManager.add_log({
             "model_type": "deepseek-v3",
@@ -136,53 +175,86 @@ class BaseQA_deepseek_R1:
         self.encoding = tiktoken.get_encoding("cl100k_base")
 
     def _setup_qa_interface(self):
-
-        def get_response(messages):
+        def get_deepseekR1_response(messages, response_format: PydanticOutputParser = None, retry_times: int = 3):
             client = OpenAI(
-                api_key=os.environ.get("DEEPSEEK_V3_KEY"),
-                base_url=os.environ.get("DEEPSEEK_V3_BASE_URL")
+                api_key=os.environ.get("DEEPSEEK_R1_KEY"),
+                base_url=os.environ.get("DEEPSEEK_R1_BASE_URL")
             )
-
-            # Get model name for token estimation
             model_name = os.environ.get("DEEPSEEK_R1_MODEL_NAME")
-            
-            # ===== Stream request to get content =====
-            stream = client.chat.completions.create(
-                messages=messages,
-                model=model_name,
-                temperature=config.R1_temperature,
-                stream=True
-            )
 
-            full_content = []
-            reasoning_contents = []
-            
-            for chunk in stream:
-                if chunk.choices:
-                    delta = chunk.choices[0].delta
-                    if delta.content:
-                        full_content.append(delta.content)
-                    if hasattr(delta, 'model_extra') and 'reasoning_content' in delta.model_extra:
-                        reasoning_contents.append(str(delta.model_extra['reasoning_content']))
+            if response_format:  # prompt must contain “{response_format}”
+                try:
+                    parser = PydanticOutputParser(pydantic_object=response_format)
+                    messages[-1]["content"] = messages[-1]["content"].format(
+                        response_format=parser.get_format_instructions()
+                    )
+                except Exception:
+                    response_format = None  # fall back to plain text if formatting fails
 
-            # ===== Estimate token usage =====
-            # Estimate prompt tokens (serialize messages to string)
-            prompt_str = json.dumps(messages, ensure_ascii=False)
-            prompt_tokens = estimate_tokens(prompt_str, model_name)
-            
-            # Estimate completion tokens (actual returned content)
-            completion_str = "".join(full_content)
-            completion_tokens = estimate_tokens(completion_str, model_name)
+            if not response_format:
+                # ===== Streaming request =====
+                stream = client.chat.completions.create(
+                    messages=messages,
+                    model=model_name,
+                    temperature=config.R1_temperature,
+                    stream=True
+                )
+
+                full_content = []
+                reasoning_contents = []
+
+                for chunk in stream:
+                    if chunk.choices:
+                        delta = chunk.choices[0].delta
+                        if delta.content:
+                            full_content.append(delta.content)
+                        if (
+                            hasattr(delta, "model_extra")
+                            and "reasoning_content" in delta.model_extra
+                        ):
+                            reasoning_contents.append(str(delta.model_extra["reasoning_content"]))
+
+                # ===== Token estimation =====
+                prompt_tokens = estimate_tokens(json.dumps(messages, ensure_ascii=False), model_name)
+                response = "".join(full_content)
+                completion_tokens = estimate_tokens(response, model_name)
+
+            else:
+                # ===== Non-streaming request =====
+                for attempt in range(retry_times):
+                    try:
+                        chat_completion = client.chat.completions.create(
+                            messages=messages,
+                            model=model_name,
+                            temperature=config.R1_temperature,
+                            stream=False
+                        )
+
+                        response = parser.parse(chat_completion.choices[0].message.content)
+                        if response is None:
+                            raise ValueError("Parsed response is None")
+
+                        reasoning_contents = chat_completion.choices[0].message.model_extra.get(
+                            "reasoning_content", ""
+                        )
+                        prompt_tokens = chat_completion.usage.prompt_tokens
+                        completion_tokens = chat_completion.usage.completion_tokens
+                        break  # success: exit retry loop
+
+                    except Exception as e:
+                        if attempt < retry_times - 1:
+                            continue
+                        print("Error during DeepSeek-R1 request:", e)
+                        raise e
 
             return {
                 "reasoning_content": "".join(reasoning_contents),
-                "answer": completion_str,
+                "answer": json.dumps(response) if response_format else response,
                 "prompt_tokens": prompt_tokens,
-                "completion_tokens": completion_tokens
+                "completion_tokens": completion_tokens,
             }
 
-
-        return get_response
+        return get_deepseekR1_response
 
     def ask(self, question: str):
         raise NotImplementedError
@@ -220,9 +292,12 @@ class QA_Context_deepseek_R1(BaseQA_deepseek_R1):
         return result["answer"]
 
 class QA_NoContext_deepseek_R1(BaseQA_deepseek_R1):
-    def ask(self, question: str):
-        messages = [{"role": "user", "content": question}]
-        result = self.qa_interface(messages)
+    def ask(self, question: str|list, response_format: PydanticOutputParser = None, retry_times: int = 3):
+        if isinstance(question, list):
+            messages = question
+        else:
+            messages = [{"role": "user", "content": question}]
+        result = self.qa_interface(messages, response_format=response_format, retry_times=retry_times)
         
         reasoning_tokens = len(self.encoding.encode(result["reasoning_content"]))
         
