@@ -245,11 +245,11 @@ Web Interface Upon Launch:
 Specify input files directly via command line arguments to start the simulation.
 
 ```Bash
-python src/chatbot.py --case_description_path "<path_to_pdf_or_txt>" --grid_path "<path_to_mesh_file>" --run_time "<int_number_of_iterations>"
+python src/chatbot.py --document_path "<path_to_pdf_or_txt>" --grid_path "<path_to_mesh_file>" --run_time "<int_number_of_iterations>"
 ```
 **Specific operational steps:**
 1. Prepare Input: 
-    - Ensure that the command-line arguments (`--case_description_path`, `--grid_path`, and `--run_time`) are correctly specified.
+    - Ensure that the command-line arguments (`--document_path`, `--grid_path`, and `--run_time`) are correctly specified.
 
 2. Execute Calculation: 
     - Run the command directly. ChatCFD will automatically complete the entire process of case identification, configuration, execution, and error correction.

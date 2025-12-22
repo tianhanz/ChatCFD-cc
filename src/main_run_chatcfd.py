@@ -48,10 +48,10 @@ def load_OF_data_json():
 def main(case_name_idx):
 
     # Load PDF or txt file
-    if config.path_cfg.case_description_path.endswith('.pdf'):
-        config.paper_content, config.paper_table = process_pdf_pdfplumber(config.path_cfg.case_description_path)
+    if config.path_cfg.document_path.endswith('.pdf'):
+        config.paper_content, config.paper_table = process_pdf_pdfplumber(config.path_cfg.document_path)
     else:
-        with open(config.path_cfg.case_description_path, 'r', encoding='utf-8') as file:
+        with open(config.path_cfg.document_path, 'r', encoding='utf-8') as file:
             config.paper_content = file.read()
             config.paper_table = []
 
@@ -166,13 +166,13 @@ def main(case_name_idx):
                     run_of_case.setup_cfl_control(config.path_cfg.output_case_path)
 
                 if not config.mesh_convert_success:
-                    file_preparation.convert_mesh(config.path_cfg.output_case_path, config.case_grid)
+                    file_preparation.convert_mesh(config.path_cfg.output_case_path, config.path_cfg.grid_path)
 
             else:
                 with open(f"{config.path_cfg.output_case_path}/cycle_index.txt", "w") as f:
                     f.write(f"Case {case_name_idx} run successfully at test_round {test_time}+1.\n")
 
-                break
+                return "Success"  # Exit the entire loop; case execution completed successfully
                 
         except Exception as e:
             try:
@@ -210,20 +210,26 @@ def main(case_name_idx):
                     run_of_case.setup_cfl_control(config.path_cfg.output_case_path)
 
                 if not config.mesh_convert_success:
-                    run_of_case.convert_mesh(config.path_cfg.output_case_path, config.case_grid)
+                    file_preparation.convert_mesh(config.path_cfg.output_case_path, config.path_cfg.grid_path)
             except Exception as e:
                 print(f"Errors occur during exception handling: {e}")
 
             continue  # Explicitly continue to next loop
+    return "Failure"  # Case execution failed
 
 def run_case():
     load_OF_data_json()
 
-    # Run 10 times
+    # Run 1 times
     run_times = config.run_cfg.run_time
+
+    running_results = []
 
     for i in range(run_times):
         print(f"Simulation {i+1}")
         case_name = f"{config.case_info.case_name}_{i}"
 
-        main(case_name)
+        running_result = main(case_name)
+        running_results.append(running_result)
+
+    return running_results

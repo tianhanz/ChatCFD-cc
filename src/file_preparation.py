@@ -376,7 +376,7 @@ def case_required_files(solver=None, turbulence_model=None, other_physical_model
         # Update the file list
         file_alternative[case_name] = filtered_files
 
-    gian_file_structure = f"""You are an OpenFOAM expert. The simulation requirement is: {config.simulate_requirement}
+    gian_file_structure = f"""You are an OpenFOAM expert. The simulation requirement is: {config.case_info.simulation_requirement}
 
 Below are the optional reference cases and their file lists:
 {file_alternative}
@@ -531,7 +531,7 @@ runTimeModifiable true;"""
 
     # Process PDF or txt, and use RAG to answer questions
     extractor = pdf_chunk_ask_question.CFDCaseExtractor()
-    extractor.process_pdf(config.path_cfg.case_description_path)
+    extractor.process_pdf(config.path_cfg.document_path)
 
     # Get physical fields
     initial_files = []  # Field files

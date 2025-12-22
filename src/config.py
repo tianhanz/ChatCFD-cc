@@ -18,10 +18,9 @@ class path_config:
     temp_dir: str = field(default="", metadata={"description": "Temporary directory for storing uploaded PDF, msh files, etc."})
 
     json_config_path: str = field(default="", metadata={"description": "Configuration file path"})
-    
-    case_description_path: str = field(default="", metadata={"description": "Path to PDF or txt file describing simulation case"})    # Will replace config.pdf_path later
-    grid_path: str = field(default="", metadata={"description": "Path to mesh file in msh or polyMesh format"})       # replace config.case_grid later
-    output_path: str = field(default="", metadata={"description": "OpenFOAM case output path under output_dir, same name as case description file"})
+    document_path: str = field(default="", metadata={"description": "Path to PDF or txt file describing simulation case"})    # Will replace config.pdf_path
+    grid_path: str = field(default="", metadata={"description": "Path to mesh file in msh or polyMesh format"})       # replace config.case_grid
+    output_path: str = field(default="", metadata={"description": "OpenFOAM case output path under output_dir, same name as case description file"})  # OUTPUT_PATH = None
     output_case_path:str = field(default="", metadata={"description": "OpenFOAM case output path under output_path, specific name set by LLM"})
 
     def __post_init__(self):
@@ -68,16 +67,14 @@ class run_config:
     mode: int = field(default=0, metadata={"description": "Runtime mode, 0: with frontend, run after frontend uploads PDF and mesh files, 1: without frontend, run after setting PDF or txt and mesh file paths"})
     grid_type: str = field(default="msh", metadata={"description": "Mesh file type, msh or polyMesh"})
 
-    run_time: int = field(default=3, metadata={"description": "Number of runs for a single case"})
+    run_time: int = field(default=1, metadata={"description": "Number of runs for a single case"})
     max_running_test_round: int = field(default=30, metadata={"description": "Maximum reflection iteration rounds"})
 
 @dataclass
 class pdf_config:
     """PDF processing configuration"""
     pdf_chunk_d: float = field(default=1.5, metadata={"description": "Distance threshold for relevance analysis"})
-    
     pdf_content: str = field(default="", metadata={"description": "PDF content, text content obtained after processing"})
-
     pass
 
 
@@ -86,7 +83,7 @@ class ConfigManager:
     def __init__(self, case_des_file_path="", grid_path=""):
         """Initialize configuration manager"""
         self.path_config = path_config(
-            case_description_path=case_des_file_path,
+            document_path=case_des_file_path,
             grid_path=grid_path,
             output_path=os.path.join(path_config.output_dir, os.path.basename(case_des_file_path).rstrip('txt').rstrip('pdf').rstrip('.'))
             )
@@ -219,6 +216,7 @@ class ConfigManager:
 config_manager = ConfigManager()  # Create global configuration manager instance
 config_manager.load_config()      # Load configuration
 config_manager.load_openfoam_env()  # Load OpenFOAM environment variables
+print("Configuration loaded successfully.")
 
 llm_cfg = config_manager.llm_config
 dependencies_cfg = config_manager.dependencies_config
@@ -236,9 +234,11 @@ class case_status:
     case_name: str = field(default="", metadata={"description": "Case name"})
     case_solver: str = field(default="", metadata={"description": "Case solver"})
     turbulence_model: str = field(default="", metadata={"description": "Turbulence model"})
-    other_physical_model: str = field(default="", metadata={"description": "Other physical models"})
+    other_physical_model: str|list = field(default="", metadata={"description": "Other physical models"})
     file_structure: list = field(default_factory=list, metadata={"description": "File structure"})
     reference_file_name: str = field(default="", metadata={"description": "Main reference file name when generating initial file structure and content"})
+    case_info_simple: dict = field(default_factory=dict, metadata={"description": "Brief case information, including case_name, solver, turbulence_model, and other_physical_model"})
+    simulation_requirement: str = field(default="", metadata={"description": "Simulation requirements in Markdown format, covering case_name, solver, turbulence_model, and other_physical_model"})
 # Store mesh-related configurations, status, content, etc.
 @dataclass
 class grid_status:
@@ -246,6 +246,7 @@ class grid_status:
     # grid_type: str = field(default=run_cfg.grid_type, metadata={"description": "Mesh file type, msh or polyMesh"})
     mesh_convert_success: bool = field(default=False, metadata={"description": "Whether mesh conversion succeeded"})
 
+    grid_bc_name: list = field(default_factory=list, metadata={"description": "List of mesh boundary names"})
     grid_boundary_conditions: dict = field(default_factory=dict, metadata={"description": "Mesh boundary conditions, key is boundary name, value is mesh boundary condition"})
     grid_boundary_init: str = field(default="", metadata={"description": "Initial boundary file content"})
     field_ic_bc_from_input: dict = field(default_factory=dict, metadata={"description": "Field file boundary and initial conditions, key is field file name, value is boundary_name->bc_ic"})
@@ -288,14 +289,6 @@ sentence_transformer_path = config_data["sentence_transformer_path"]
 R1_temperature = 0.9
 V3_temperature = 0.7
 
-all_case_requirement_json = None
-
-all_case_dict = None        # Case summary generated by LLM based on PDF
-
-case_description = None     # Case description
-
-other_physical_model = [] # str or list
-
 target_case_requirement_json = None
 
 def convert_boundary_names_to_lowercase(data):
@@ -318,7 +311,6 @@ case_boundaries = []            # Case boundary conditions
 case_solver = None              # Case solver
 case_turbulence_type = "laminar"
 case_turbulence_model = "invalid"
-case_boundary_names = None
 
 reference_case_searching_round = 10
 
@@ -328,9 +320,6 @@ Database_OFv24_PATH = f'{Base_PATH}/database_OFv24'
 TEMP_PATH = f'{Base_PATH}/temp'
 OUTPUT_CHATCFD_PATH = f'{Base_PATH}/run_chatcfd'
 OUTPUT_PATH = None
-
-case_grid = None
-pdf_path = None
 
 ensure_directory_exists(Database_OFv24_PATH)
 ensure_directory_exists(OUTPUT_CHATCFD_PATH)
@@ -429,7 +418,6 @@ case_ic_bc_from_paper = ""
 reference_file_by_name = None
 reference_file_by_solver = None
 
-simulate_requirement = None     # Case running requirement settings (case_name, case_solver, turbulence_model, case_description)
 boundary_name_and_type = None
 
 incompressible_solvers = [

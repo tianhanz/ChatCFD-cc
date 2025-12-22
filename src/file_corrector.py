@@ -224,7 +224,7 @@ def find_reference_files_by_solver(target_file):
     if turbulence_model not in turbulence_model_list:
         turbulence_model = None
 
-    other_physical_model = config.other_physical_model
+    other_physical_model = config.case_info.other_physical_model
 
     # 返回内容
     target_file_reference = {}
@@ -570,9 +570,9 @@ def find_reference_files(target_file, case_name = None):
 3. If selectable_files lists only case names without corresponding file contents, leave the content of the {target_file} as an empty string.
 </Output_Requirements>"""
 
-    solver = config.case_solver
-    turbulence_model = config.case_turbulence_model
-    other_physical_model = config.other_physical_model
+    solver = config.case_info.case_solver
+    turbulence_model = config.case_info.turbulence_model
+    other_physical_model = config.case_info.other_physical_model
 
     # Search for reference files, try to ensure reference cases that match both solver and turbulence model
     loose = 0 # Search looseness level, 0 means consider special physical models, 1 means ignore
@@ -638,7 +638,7 @@ def find_reference_files(target_file, case_name = None):
                 case_name=case_name,
                 target_file=target_file,
                 file_num=2,
-                simulation_requirements=config.case_description,
+                simulation_requirements=config.case_info.case_description,
                 selectable_files=file_content_sol,
                 response_format=parser.get_format_instructions()
             ))
@@ -650,7 +650,7 @@ def find_reference_files(target_file, case_name = None):
                     case_name=case_name,
                     target_file=target_file,
                     file_num=2,
-                    simulation_requirements=config.case_description,
+                    simulation_requirements=config.case_info.case_description,
                     selectable_files=file_content_sol,
                     response_format=parser.get_format_instructions()
                 ),
@@ -679,7 +679,7 @@ def find_reference_files(target_file, case_name = None):
                         case_name=case_name,
                         target_file=target_file,
                         file_num=2,
-                        simulation_requirements=config.case_description,
+                        simulation_requirements=config.case_info.case_description,
                         selectable_files=json.dumps(file_content, ensure_ascii=False, indent=4),
                         response_format=parser.get_format_instructions()
                     ))
@@ -1073,7 +1073,7 @@ Combine the error message with the content, physical meaning, and role of each f
 
 6. Case configuration requirements:
 <case_requirements>
-{config.case_description}
+{config.case_info.case_description}
 </case_requirements>
 
 Output requirements:
@@ -1127,7 +1127,7 @@ Output requirements:
 
 6. Case configuration requirements:
     <case_requirements>
-    {config.case_description}
+    {config.case_info.case_description}
     </case_requirements>
 
 Output requirements:

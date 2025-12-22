@@ -2,5 +2,6 @@
 __pycache__/
 temp/
 run_chatcfd/
+inputs/*_bak.json
 src/*_bak.py
 removed/
