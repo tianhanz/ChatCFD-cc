@@ -1,0 +1,117 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2406                                  |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    arch        "LSB;label=32;scalar=64";
+    class       polyBoundaryMesh;
+    location    "constant/polyMesh";
+    object      boundary;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+12
+(
+    innerInlet
+    {
+        type            patch;
+        inGroups        1(inlet);
+        nFaces          544;
+        startFace       245872;
+    }
+    outerInlet
+    {
+        type            patch;
+        inGroups        1(inlet);
+        nFaces          1396;
+        startFace       246416;
+    }
+    innerOutlet
+    {
+        type            patch;
+        inGroups        1(outlet);
+        nFaces          544;
+        startFace       247812;
+    }
+    outerOutlet
+    {
+        type            patch;
+        inGroups        1(outlet);
+        nFaces          1396;
+        startFace       248356;
+    }
+    rotorBlades
+    {
+        type            wall;
+        inGroups        2(movingWalls wall);
+        nFaces          540;
+        startFace       249752;
+    }
+    rotorBlades_slave
+    {
+        type            wall;
+        inGroups        2(movingWalls wall);
+        nFaces          540;
+        startFace       250292;
+    }
+    shaft
+    {
+        type            wall;
+        inGroups        2(movingWalls wall);
+        nFaces          1048;
+        startFace       250832;
+    }
+    statorBlades
+    {
+        type            wall;
+        inGroups        2(staticWalls wall);
+        nFaces          2128;
+        startFace       251880;
+    }
+    statorBlades_slave
+    {
+        type            wall;
+        inGroups        2(staticWalls wall);
+        nFaces          2128;
+        startFace       254008;
+    }
+    walls
+    {
+        type            wall;
+        inGroups        2(staticWalls wall);
+        nFaces          5808;
+        startFace       256136;
+    }
+    AMI1
+    {
+        type            cyclicAMI;
+        inGroups        2(cyclicAMI baffleFaces);
+        nFaces          10944;
+        startFace       261944;
+        matchTolerance  0.0001;
+        transform       noOrdering;
+        neighbourPatch  AMI2;
+        AMIMethod       faceAreaWeightAMI;
+        restartUncoveredSourceFace 1;
+    }
+    AMI2
+    {
+        type            cyclicAMI;
+        inGroups        2(cyclicAMI baffleFaces);
+        nFaces          10944;
+        startFace       272888;
+        matchTolerance  0.0001;
+        transform       noOrdering;
+        neighbourPatch  AMI1;
+        AMIMethod       faceAreaWeightAMI;
+        restartUncoveredSourceFace 1;
+    }
+)
+
+// ************************************************************************* //

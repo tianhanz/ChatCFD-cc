@@ -1,0 +1,205 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2406                                  |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    arch        "LSB;label=32;scalar=64";
+    class       polyBoundaryMesh;
+    location    "constant/polyMesh";
+    object      boundary;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+17
+(
+    inlet
+    {
+        type            patch;
+        nFaces          5;
+        startFace       1599;
+    }
+    outlet1
+    {
+        type            patch;
+        nFaces          5;
+        startFace       1604;
+    }
+    outlet2
+    {
+        type            patch;
+        nFaces          5;
+        startFace       1609;
+    }
+    walls
+    {
+        type            wall;
+        inGroups        1(wall);
+        nFaces          312;
+        startFace       1614;
+    }
+    inlet_central_couple
+    {
+        type            cyclicACMI;
+        inGroups        1(cyclicACMI);
+        nFaces          5;
+        startFace       1926;
+        matchTolerance  0.0001;
+        transform       unknown;
+        neighbourPatch  central_inlet_couple;
+        AMIMethod       faceAreaWeightAMI;
+        requireMatch    0;
+        restartUncoveredSourceFace 1;
+        nonOverlapPatch inlet_central_blockage;
+    }
+    inlet_central_blockage
+    {
+        type            wall;
+        inGroups        1(wall);
+        nFaces          5;
+        startFace       1931;
+    }
+    central_inlet_couple
+    {
+        type            cyclicACMI;
+        inGroups        1(cyclicACMI);
+        nFaces          12;
+        startFace       1936;
+        matchTolerance  0.0001;
+        transform       unknown;
+        neighbourPatch  inlet_central_couple;
+        AMIMethod       faceAreaWeightAMI;
+        requireMatch    0;
+        restartUncoveredSourceFace 1;
+        nonOverlapPatch central_inlet_blockage;
+    }
+    central_inlet_blockage
+    {
+        type            wall;
+        inGroups        1(wall);
+        nFaces          12;
+        startFace       1948;
+    }
+    bottom_central_couple
+    {
+        type            cyclicACMI;
+        inGroups        1(cyclicACMI);
+        nFaces          5;
+        startFace       1960;
+        matchTolerance  0.0001;
+        transform       unknown;
+        neighbourPatch  central_bottom_couple;
+        AMIMethod       faceAreaWeightAMI;
+        requireMatch    0;
+        restartUncoveredSourceFace 1;
+        nonOverlapPatch bottom_central_blockage;
+        scale           table;
+        scaleCoeffs
+        {
+            values          
+3
+(
+(0 1)
+(0.2 1)
+(0.3 0)
+)
+;
+        }
+    }
+    bottom_central_blockage
+    {
+        type            wall;
+        inGroups        1(wall);
+        nFaces          5;
+        startFace       1965;
+    }
+    central_bottom_couple
+    {
+        type            cyclicACMI;
+        inGroups        1(cyclicACMI);
+        nFaces          12;
+        startFace       1970;
+        matchTolerance  0.0001;
+        transform       unknown;
+        neighbourPatch  bottom_central_couple;
+        AMIMethod       faceAreaWeightAMI;
+        requireMatch    0;
+        restartUncoveredSourceFace 1;
+        nonOverlapPatch central_bottom_blockage;
+    }
+    central_bottom_blockage
+    {
+        type            wall;
+        inGroups        1(wall);
+        nFaces          12;
+        startFace       1982;
+    }
+    top_central_couple
+    {
+        type            cyclicACMI;
+        inGroups        1(cyclicACMI);
+        nFaces          5;
+        startFace       1994;
+        matchTolerance  0.0001;
+        transform       unknown;
+        neighbourPatch  central_top_couple;
+        AMIMethod       faceAreaWeightAMI;
+        requireMatch    0;
+        restartUncoveredSourceFace 1;
+        nonOverlapPatch top_central_blockage;
+        scale           table;
+        scaleCoeffs
+        {
+            values          
+3
+(
+(0 0)
+(0.2 0)
+(0.3 1)
+)
+;
+        }
+    }
+    top_central_blockage
+    {
+        type            wall;
+        inGroups        1(wall);
+        nFaces          5;
+        startFace       1999;
+    }
+    central_top_couple
+    {
+        type            cyclicACMI;
+        inGroups        1(cyclicACMI);
+        nFaces          12;
+        startFace       2004;
+        matchTolerance  0.0001;
+        transform       unknown;
+        neighbourPatch  top_central_couple;
+        AMIMethod       faceAreaWeightAMI;
+        requireMatch    0;
+        restartUncoveredSourceFace 1;
+        nonOverlapPatch central_top_blockage;
+    }
+    central_top_blockage
+    {
+        type            wall;
+        inGroups        1(wall);
+        nFaces          12;
+        startFace       2016;
+    }
+    defaultFaces
+    {
+        type            empty;
+        inGroups        1(empty);
+        nFaces          1788;
+        startFace       2028;
+    }
+)
+
+// ************************************************************************* //

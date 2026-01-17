@@ -1,0 +1,84 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2406                                  |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    arch        "LSB;label=32;scalar=64";
+    class       polyBoundaryMesh;
+    location    "constant/polyMesh";
+    object      boundary;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+8
+(
+    inlet
+    {
+        type            patch;
+        nFaces          25;
+        startFace       10025;
+    }
+    outlet1
+    {
+        type            patch;
+        nFaces          25;
+        startFace       10050;
+    }
+    outlet2
+    {
+        type            patch;
+        nFaces          25;
+        startFace       10075;
+    }
+    defaultFaces
+    {
+        type            wall;
+        inGroups        1(wall);
+        nFaces          3075;
+        startFace       10100;
+    }
+    baffleFaces_master
+    {
+        type            wall;
+        inGroups        2(wall baffleFaces);
+        nFaces          16;
+        startFace       13175;
+    }
+    baffleFaces_slave
+    {
+        type            wall;
+        inGroups        2(wall baffleFaces);
+        nFaces          16;
+        startFace       13191;
+    }
+    cyclicFaces_master
+    {
+        type            cyclic;
+        inGroups        2(cyclic cyclicFaces);
+        nFaces          9;
+        startFace       13207;
+        matchTolerance  0.0001;
+        transform       unknown;
+        neighbourPatch  cyclicFaces_slave;
+        coupleGroup     cyclicFaces;
+    }
+    cyclicFaces_slave
+    {
+        type            cyclic;
+        inGroups        2(cyclic cyclicFaces);
+        nFaces          9;
+        startFace       13216;
+        matchTolerance  0.0001;
+        transform       unknown;
+        neighbourPatch  cyclicFaces_master;
+        coupleGroup     cyclicFaces;
+    }
+)
+
+// ************************************************************************* //
