@@ -4,3 +4,4 @@ inputs/* linguist-vendored
 run_chatcfd/** linguist-vendored
 temp/* linguist-vendored
 test_env/* linguist-vendored
+datasets/* linguist-vendored
