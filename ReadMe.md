@@ -341,13 +341,12 @@ This project is constantly being updated and optimized. We regularly push new fe
 If you use the ChatCFD system or related data in your research, please cite our preprint paper:
 
 ```
-@misc{fan2025chatcfdllmdrivenagentendtoend,
-      title={ChatCFD: An LLM-Driven Agent for End-to-End CFD Automation with Domain-Specific Structured Reasoning}, 
-      author={E Fan and Kang Hu and Zhuowen Wu and Jiangyang Ge and Jiawei Miao and Yuzhi Zhang and He Sun and Weizong Wang and Tianhan Zhang},
-      year={2025},
-      eprint={2506.02019},
-      archivePrefix={arXiv},
-      primaryClass={cs.CL},
-      url={[https://arxiv.org/abs/2506.02019](https://arxiv.org/abs/2506.02019)}, 
+@article{fan2026chatcfd,
+  title={ChatCFD: A Large Language Model-Driven Agent for End-to-End Computational Fluid Dynamics Automation with Structured Knowledge and Reasoning},
+  author={Fan, E and Hu, Kang and Wu, Zhuowen and Ge, Jiangyang and Miao, Jiawei and Zhang, Yuzhi and Sun, He and Wang, Weizong and Zhang, Tianhan},
+  journal={Advanced Intelligent Discovery},
+  pages={e202500174},
+  year={2026},
+  publisher={Wiley Online Library}
 }
 ```
