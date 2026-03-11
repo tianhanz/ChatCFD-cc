@@ -5,3 +5,11 @@ run_chatcfd/
 inputs/*_bak.json
 src/*_bak.py
 removed/
+# Virtual environment
+chatcfd_venv/
+
+# Logs
+*.log
+
+# Local configuration (contains API keys)
+inputs/chatcfd_config.json
