@@ -54,11 +54,13 @@ class llm_config:
     # R1 model configuration
     DEEPSEEK_R1_KEY : str = field(default="", metadata={"description": "DeepSeek-R1 API Key"})
     DEEPSEEK_R1_BASE_URL : str = field(default="https://ark.cn-beijing.volces.com/api/v3", metadata={"description": "DeepSeek-R1 API Base URL"})
+    DEEPSEEK_R1_MODEL_NAME : str = field(default="deepseek-r1-250528", metadata={"description": "DeepSeek-R1 Model Name"})
     R1_temperature: float = field(default=0.9, metadata={"description": "R1 model temperature"})
 
     # V3 model configuration
     DEEPSEEK_V3_KEY : str = field(default="", metadata={"description": "DeepSeek-V3 API Key"})
     DEEPSEEK_V3_BASE_URL : str = field(default="https://ark.cn-beijing.volces.com/api/v3", metadata={"description": "DeepSeek-V3 API Base URL"})
+    DEEPSEEK_V3_MODEL_NAME : str = field(default="deepseek-v3-250324", metadata={"description": "DeepSeek-V3 Model Name"})
     V3_temperature: float = field(default=0.7, metadata={"description": "V3 model temperature"})
 
 @dataclass
@@ -157,11 +159,11 @@ class ConfigManager:
 
         os.environ["DEEPSEEK_V3_KEY"] = self.llm_config.DEEPSEEK_V3_KEY
         os.environ["DEEPSEEK_V3_BASE_URL"] = self.llm_config.DEEPSEEK_V3_BASE_URL
-        os.environ["DEEPSEEK_V3_MODEL_NAME"] = getattr(self.llm_config, 'DEEPSEEK_V3_MODEL_NAME', 'deepseek-v3-250324')
+        os.environ["DEEPSEEK_V3_MODEL_NAME"] = self.llm_config.DEEPSEEK_V3_MODEL_NAME
 
         os.environ["DEEPSEEK_R1_KEY"] = self.llm_config.DEEPSEEK_R1_KEY
         os.environ["DEEPSEEK_R1_BASE_URL"] = self.llm_config.DEEPSEEK_R1_BASE_URL
-        os.environ["DEEPSEEK_R1_MODEL_NAME"] = getattr(self.llm_config, 'DEEPSEEK_R1_MODEL_NAME', 'deepseek-r1-250528')
+        os.environ["DEEPSEEK_R1_MODEL_NAME"] = self.llm_config.DEEPSEEK_R1_MODEL_NAME
 
         self._ensure_directory_exists()  # Ensure all necessary directories exist
 
