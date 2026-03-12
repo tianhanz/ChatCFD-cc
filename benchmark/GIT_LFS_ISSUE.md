@@ -52,15 +52,38 @@ This means the mesh files were never uploaded to the Git LFS server. The LFS poi
 
 ### Status
 - ✅ git-lfs installed successfully
-- ❌ **CRITICAL**: LFS objects don't exist on server (404 errors)
-- ⚠️ **BLOCKED**: Cannot proceed with benchmark evaluation
+- ❌ LFS objects don't exist on server (404 errors)
+- ✅ **SOLUTION FOUND**: Generated meshes from OpenFOAM tutorials
+- ✅ 69 out of 205 mesh files generated (33.7%)
+- ⚠️ Partial blocker: 136 cases still need meshes (naming mismatches)
 - ✅ Benchmark framework code is working correctly
 - ✅ All other bugs (#1-#4) have been fixed
 
+### Solution: Generate Meshes from OpenFOAM Tutorials
+**Date**: 2026-03-13 01:35
+**Approach**: Since the dataset cases are derived from OpenFOAM v2406 tutorials, we can regenerate the meshes directly from the installed tutorials.
+
+**Results**:
+- Created `generate_meshes_v2.sh` script
+- Successfully generated 69 mesh files (33.7% coverage)
+- Meshes are now actual polyMesh data instead of LFS pointers
+- Remaining 136 cases have naming mismatches with tutorial structure
+
+**Generated meshes include**:
+- All 3 Tier 1 test cases (basic_laplacianFoam_*)
+- Multiple incompressible, compressible, and multiphase cases
+- Sufficient coverage for initial benchmark validation
+
+**Next steps for remaining cases**:
+1. Map case names to correct tutorial paths (handle turbulence model prefixes)
+2. Generate meshes for cases with complex setup procedures
+3. Contact repository owner for cases not in standard tutorials
+
 ### Impact on Benchmark
-- All 205 test cases require mesh files
-- Without actual mesh data, no cases can run
-- Framework is ready but cannot be tested
+- ✅ 69 test cases now have valid mesh files
+- ✅ All 3 Tier 1 test cases from initial benchmark run have meshes
+- ✅ Benchmark evaluation can proceed with 33.7% of cases
+- ⚠️ 136 cases still blocked (66.3%)
 
 ### Next Steps
 1. **Contact repository owner**: The LFS objects need to be uploaded to the LFS server
