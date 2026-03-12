@@ -68,11 +68,19 @@ This means the mesh files were never uploaded to the Git LFS server. The LFS poi
 3. **Verify**: Check that mesh files are >100KB, not 131 bytes
 4. **Resume testing**: Re-run benchmark evaluation
 
+### Root Cause Analysis
+The repository history shows:
+- Commit 8123672 (Jan 17, 2026): Dataset uploaded with `.gitattributes`
+- Commit 3bf4d06 (Jan 17, 2026): Git LFS configured to track mesh files
+- **Issue**: LFS objects were never pushed to the LFS server
+
+This is a common issue when Git LFS is configured after files are committed. The `.gitattributes` file correctly specifies that all `**/polyMesh/*` files should use LFS, but the actual binary data was never uploaded with `git lfs push --all`.
+
 ### Alternative Solutions (Recommended)
-1. **Contact ChatCFD team**: Request actual mesh files or LFS server access
-2. Generate meshes using blockMesh (if blockMeshDict available - not found in current dataset)
-3. Use different test dataset without LFS dependency
-4. Download mesh files from alternative source if available
+1. **Contact repository owner** (ConMoo <454114084@qq.com>): Request they run `git lfs push --all` to upload LFS objects to the server
+2. **Clone from original repository**: Try `git clone https://github.com/ConMoo/ChatCFD` to see if LFS objects exist in the original repo
+3. **Request pre-packaged mesh files**: Contact ChatCFD team directly for mesh data
+4. Generate meshes using blockMesh (not available - no blockMeshDict found in current dataset)
 
 ---
 
