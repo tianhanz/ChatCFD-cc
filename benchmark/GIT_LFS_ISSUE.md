@@ -41,8 +41,18 @@ cd datasets
 git lfs pull
 ```
 
+### Update: LFS Objects Not on Server
+**Date**: 2026-03-13
+**Finding**: Git LFS is now installed, but `git lfs pull` returns 404 errors:
+```
+[404] Object does not exist on the server
+```
+
+This means the mesh files were never uploaded to the Git LFS server. The LFS pointers exist in the repository, but the actual binary data is missing from the LFS storage backend.
+
 ### Status
-- ⚠️ **BLOCKED**: No sudo access to install git-lfs
+- ✅ git-lfs installed successfully
+- ❌ **CRITICAL**: LFS objects don't exist on server (404 errors)
 - ⚠️ **BLOCKED**: Cannot proceed with benchmark evaluation
 - ✅ Benchmark framework code is working correctly
 - ✅ All other bugs (#1-#4) have been fixed
@@ -53,16 +63,16 @@ git lfs pull
 - Framework is ready but cannot be tested
 
 ### Next Steps
-1. **System admin**: Install git-lfs on the system
-2. **Pull files**: Run `git lfs pull` in datasets directory
+1. **Contact repository owner**: The LFS objects need to be uploaded to the LFS server
+2. **Alternative**: Obtain mesh files from ChatCFD team directly
 3. **Verify**: Check that mesh files are >100KB, not 131 bytes
 4. **Resume testing**: Re-run benchmark evaluation
 
-### Alternative Solutions
-1. Download mesh files from alternative source
-2. Generate meshes using blockMesh (if blockMeshDict available)
-3. Use different test dataset without LFS
-4. Request pre-downloaded mesh files from ChatCFD team
+### Alternative Solutions (Recommended)
+1. **Contact ChatCFD team**: Request actual mesh files or LFS server access
+2. Generate meshes using blockMesh (if blockMeshDict available - not found in current dataset)
+3. Use different test dataset without LFS dependency
+4. Download mesh files from alternative source if available
 
 ---
 
