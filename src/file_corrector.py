@@ -698,7 +698,26 @@ def find_reference_files(target_file, case_name = None):
 
     if not has_content:
         for k, v in file_content.items():
-            file_content[k] = file_content_bak[k]
+            # Try exact match first
+            if k in file_content_bak:
+                file_content[k] = file_content_bak[k]
+            else:
+                # Fuzzy match: find closest key in file_content_bak
+                best_match = None
+                best_score = 0
+                for bak_key in file_content_bak.keys():
+                    # Simple similarity: count matching characters
+                    score = sum(1 for a, b in zip(k.lower(), bak_key.lower()) if a == b)
+                    if score > best_score:
+                        best_score = score
+                        best_match = bak_key
+
+                if best_match and best_score > len(k) * 0.7:  # 70% similarity threshold
+                    print(f"Fuzzy matched '{k}' to '{best_match}'")
+                    file_content[k] = file_content_bak[best_match]
+                else:
+                    print(f"Warning: Could not find match for '{k}' in file_content_bak, using empty string")
+                    file_content[k] = ""
     # print("file_content:",file_content)
     return file_content
 
