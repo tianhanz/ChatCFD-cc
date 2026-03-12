@@ -17,6 +17,11 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 import config
 from main_run_chatcfd import run_case
 
+# Import validators
+from bc_validator import BCValidator
+from solver_validator import SolverValidator
+from fidelity_analyzer import FidelityAnalyzer
+
 
 class TestResult:
     """Stores results from a single test run"""
@@ -34,6 +39,11 @@ class TestResult:
         self.solver_detected = None
         self.turbulence_model_detected = None
         self.case_dir = None
+        # Validation metrics
+        self.bc_accuracy = None
+        self.solver_correctness = None
+        self.physical_fidelity = None
+        self.validation_issues = []
 
     def to_dict(self) -> Dict:
         """Convert to dictionary for JSON serialization"""
@@ -50,17 +60,28 @@ class TestResult:
             "cost": self.cost,
             "solver_detected": self.solver_detected,
             "turbulence_model_detected": self.turbulence_model_detected,
-            "case_dir": self.case_dir
+            "case_dir": self.case_dir,
+            "bc_accuracy": self.bc_accuracy,
+            "solver_correctness": self.solver_correctness,
+            "physical_fidelity": self.physical_fidelity,
+            "validation_issues": self.validation_issues
         }
 
 
 class TestRunner:
     """Runs ChatCFD on test cases and collects metrics"""
 
-    def __init__(self, output_dir: str = "benchmark/results"):
+    def __init__(self, output_dir: str = "benchmark/results", enable_validation: bool = True):
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.results: List[TestResult] = []
+        self.enable_validation = enable_validation
+
+        # Initialize validators
+        if self.enable_validation:
+            self.bc_validator = BCValidator()
+            self.solver_validator = SolverValidator()
+            self.fidelity_analyzer = FidelityAnalyzer()
 
     def run_single_case(self, test_case, max_rounds: int = 30, run_time: int = 1) -> TestResult:
         """Run ChatCFD on a single test case"""
@@ -107,9 +128,16 @@ class TestRunner:
             # Get case directory
             result.case_dir = str(config.path_cfg.case_path)
 
+            # Run validation if enabled and case succeeded
+            if self.enable_validation and result.success and result.case_dir:
+                print(f"\nRunning validation for {test_case.name}...")
+                self._validate_case(result, test_case)
+
             print(f"\n{'='*80}")
             print(f"Test completed: {test_case.name}")
             print(f"Success: {result.success}, ICOT rounds: {result.icot_rounds}, Duration: {result.duration:.1f}s")
+            if result.bc_accuracy is not None:
+                print(f"Validation - BC: {result.bc_accuracy:.1f}%, Solver: {result.solver_correctness:.1f}%, Fidelity: {result.physical_fidelity:.1f}%")
             print(f"{'='*80}\n")
 
         except Exception as e:
@@ -120,6 +148,73 @@ class TestRunner:
 
         self.results.append(result)
         return result
+
+    def _validate_case(self, result: TestResult, test_case) -> None:
+        """Run validation on a completed case"""
+        try:
+            # Get ground truth directory
+            root_dir = Path(__file__).parent.parent.parent
+            ground_truth_dir = root_dir / "datasets" / "of_case_grids" / test_case.name
+
+            # Validate boundary conditions
+            try:
+                bc_results = self.bc_validator.validate_case(
+                    result.case_dir,
+                    str(ground_truth_dir) if ground_truth_dir.exists() else None
+                )
+                result.bc_accuracy = bc_results.get('bc_accuracy', 0.0)
+
+                # Collect BC issues
+                if bc_results.get('mismatches'):
+                    result.validation_issues.extend([
+                        f"BC: {m}" for m in bc_results['mismatches'][:3]  # Limit to 3
+                    ])
+            except Exception as e:
+                print(f"  BC validation failed: {e}")
+                result.bc_accuracy = 0.0
+
+            # Validate solver configuration
+            try:
+                solver_results = self.solver_validator.validate_case(
+                    result.case_dir,
+                    test_case.solver
+                )
+                result.solver_correctness = solver_results.get('solver_correctness', 0.0)
+
+                # Collect solver issues
+                if solver_results.get('issues'):
+                    result.validation_issues.extend([
+                        f"Solver: {i}" for i in solver_results['issues'][:3]  # Limit to 3
+                    ])
+            except Exception as e:
+                print(f"  Solver validation failed: {e}")
+                result.solver_correctness = 0.0
+
+            # Analyze physical fidelity
+            try:
+                fidelity_results = self.fidelity_analyzer.analyze_case(result.case_dir)
+                result.physical_fidelity = fidelity_results.get('physical_fidelity', 0.0)
+
+                # Collect fidelity issues
+                if fidelity_results.get('convergence_issues'):
+                    result.validation_issues.extend([
+                        f"Convergence: {i}" for i in fidelity_results['convergence_issues'][:2]
+                    ])
+                if fidelity_results.get('physical_issues'):
+                    result.validation_issues.extend([
+                        f"Physical: {i}" for i in fidelity_results['physical_issues'][:2]
+                    ])
+            except Exception as e:
+                print(f"  Fidelity analysis failed: {e}")
+                result.physical_fidelity = 0.0
+
+            print(f"  Validation complete - BC: {result.bc_accuracy:.1f}%, "
+                  f"Solver: {result.solver_correctness:.1f}%, "
+                  f"Fidelity: {result.physical_fidelity:.1f}%")
+
+        except Exception as e:
+            print(f"  Validation error: {e}")
+            result.validation_issues.append(f"Validation error: {str(e)}")
 
     def run_batch(self, test_cases: List, max_rounds: int = 30, run_time: int = 1,
                   save_interval: int = 5) -> List[TestResult]:
@@ -172,6 +267,15 @@ class TestRunner:
         total_rounds = sum(r.icot_rounds for r in self.results)
         avg_rounds = total_rounds / total if total > 0 else 0
 
+        # Calculate validation averages
+        bc_scores = [r.bc_accuracy for r in self.results if r.bc_accuracy is not None]
+        solver_scores = [r.solver_correctness for r in self.results if r.solver_correctness is not None]
+        fidelity_scores = [r.physical_fidelity for r in self.results if r.physical_fidelity is not None]
+
+        avg_bc = sum(bc_scores) / len(bc_scores) if bc_scores else 0
+        avg_solver = sum(solver_scores) / len(solver_scores) if solver_scores else 0
+        avg_fidelity = sum(fidelity_scores) / len(fidelity_scores) if fidelity_scores else 0
+
         print(f"\n{'='*80}")
         print(f"BENCHMARK SUMMARY")
         print(f"{'='*80}")
@@ -181,6 +285,16 @@ class TestRunner:
         print(f"Average duration: {avg_duration:.1f}s")
         print(f"Average ICOT rounds: {avg_rounds:.1f}")
         print(f"Total time: {total_duration:.1f}s ({total_duration/60:.1f} min)")
+
+        if bc_scores or solver_scores or fidelity_scores:
+            print(f"\nValidation Metrics:")
+            if bc_scores:
+                print(f"  Average BC Accuracy: {avg_bc:.1f}%")
+            if solver_scores:
+                print(f"  Average Solver Correctness: {avg_solver:.1f}%")
+            if fidelity_scores:
+                print(f"  Average Physical Fidelity: {avg_fidelity:.1f}%")
+
         print(f"{'='*80}\n")
 
 

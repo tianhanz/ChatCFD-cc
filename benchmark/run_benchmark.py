@@ -16,7 +16,8 @@ from log_parser import BatchLogParser
 
 
 def run_benchmark(tier: int = None, solver: str = None, limit: int = None,
-                 max_rounds: int = 30, run_time: int = 1, output_name: str = None):
+                 max_rounds: int = 30, run_time: int = 1, output_name: str = None,
+                 generate_report: bool = False, compare_with: str = None):
     """
     Run benchmark tests on ChatCFD
 
@@ -27,6 +28,8 @@ def run_benchmark(tier: int = None, solver: str = None, limit: int = None,
         max_rounds: Maximum ICOT rounds per case
         run_time: OpenFOAM simulation time
         output_name: Custom output filename
+        generate_report: Generate HTML report after run
+        compare_with: Path to baseline results for comparison
     """
 
     # Setup paths
@@ -57,7 +60,7 @@ def run_benchmark(tier: int = None, solver: str = None, limit: int = None,
 
     if not test_cases:
         print("No test cases selected!")
-        return
+        return None
 
     # Generate output filename
     if not output_name:
@@ -81,7 +84,35 @@ def run_benchmark(tier: int = None, solver: str = None, limit: int = None,
     runner.save_results(output_name)
     runner.print_summary()
 
-    print(f"\nBenchmark complete! Results saved to: benchmark/results/{output_name}")
+    results_path = Path("benchmark/results") / output_name
+    print(f"\nBenchmark complete! Results saved to: {results_path}")
+
+    # Generate report if requested
+    if generate_report:
+        print("\nGenerating HTML report...")
+        try:
+            from report_generator import ReportGenerator
+            generator = ReportGenerator(str(results_path))
+            report_path = generator.generate_report()
+            print(f"Report generated: {report_path}")
+            print(f"Open in browser: file://{Path(report_path).absolute()}")
+        except Exception as e:
+            print(f"Warning: Failed to generate report: {e}")
+
+    # Generate comparison if requested
+    if compare_with:
+        print(f"\nGenerating comparison with baseline: {compare_with}")
+        try:
+            from comparator import BenchmarkComparator
+            comparator = BenchmarkComparator(compare_with, str(results_path))
+            comparator.print_summary()
+            comparison_path = comparator.generate_report()
+            print(f"Comparison report generated: {comparison_path}")
+            print(f"Open in browser: file://{Path(comparison_path).absolute()}")
+        except Exception as e:
+            print(f"Warning: Failed to generate comparison: {e}")
+
+    return str(results_path)
 
 
 def quick_test():
@@ -126,8 +157,8 @@ Examples:
   # Quick test (3 Tier 1 cases)
   python run_benchmark.py --quick
 
-  # Run all Tier 1 cases
-  python run_benchmark.py --tier 1
+  # Run all Tier 1 cases with report
+  python run_benchmark.py --tier 1 --report
 
   # Run first 10 simpleFoam cases
   python run_benchmark.py --solver simpleFoam --limit 10
@@ -135,8 +166,14 @@ Examples:
   # Run full benchmark (all 205 cases)
   python run_benchmark.py --full
 
-  # Custom run
-  python run_benchmark.py --tier 2 --limit 20 --max-rounds 15
+  # Custom run with comparison
+  python run_benchmark.py --tier 2 --limit 20 --max-rounds 15 --report --compare baseline.json
+
+  # Generate report from existing results
+  python -m utils.report_generator benchmark/results/benchmark_tier1_20260312_123456.json
+
+  # Compare two existing runs
+  python -m utils.comparator benchmark/results/baseline.json benchmark/results/current.json
         """
     )
 
@@ -166,6 +203,12 @@ Examples:
     parser.add_argument('--output', type=str,
                        help='Custom output filename')
 
+    # Reporting options
+    parser.add_argument('--report', action='store_true',
+                       help='Generate HTML report after benchmark run')
+    parser.add_argument('--compare', type=str, metavar='BASELINE',
+                       help='Compare results with baseline JSON file')
+
     args = parser.parse_args()
 
     # Execute based on arguments
@@ -185,7 +228,9 @@ Examples:
             limit=args.limit,
             max_rounds=args.max_rounds,
             run_time=args.run_time,
-            output_name=args.output
+            output_name=args.output,
+            generate_report=args.report,
+            compare_with=args.compare
         )
 
 
