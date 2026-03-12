@@ -131,7 +131,7 @@ class TestRunner:
             result.turbulence_model_detected = config.case_info.turbulence_model
 
             # Get case directory
-            result.case_dir = str(config.path_cfg.case_path)
+            result.case_dir = str(config.path_cfg.case_dir)
 
             # Run validation if enabled and case succeeded
             if self.enable_validation and result.success and result.case_dir:
