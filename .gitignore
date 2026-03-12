@@ -13,3 +13,4 @@ chatcfd_venv/
 
 # Local configuration (contains API keys)
 inputs/chatcfd_config.json
+*_0/
