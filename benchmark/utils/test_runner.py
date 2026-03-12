@@ -96,16 +96,21 @@ class TestRunner:
         try:
             # Set up paths
             config.path_cfg.document_path = test_case.description_path
-            config.path_cfg.grid_path = test_case.mesh_path
+            # For polyMesh format, grid_path should point to the polyMesh directory
+            config.path_cfg.grid_path = test_case.mesh_path + "/constant/polyMesh"
 
             # Configure test parameters
             config.max_running_test_round = max_rounds
             config.run_cfg.run_time = run_time
 
-            # Clear previous case info
-            config.case_info.case_name = ""
-            config.case_info.case_solver = ""
-            config.case_info.turbulence_model = ""
+            # Set grid type to polyMesh (our test cases use OpenFOAM format)
+            config.grid_type = "polyMesh"
+
+            # Set case info from test case
+            config.case_info.case_name = test_case.name
+            config.case_info.case_solver = test_case.solver
+            # Try to detect turbulence model from description
+            config.case_info.turbulence_model = self._detect_turbulence_model(test_case)
 
             # Run the case
             start = time.time()
@@ -145,9 +150,40 @@ class TestRunner:
             result.success = False
             result.error_messages.append(str(e))
             print(f"ERROR running {test_case.name}: {e}")
+            import traceback
+            print(f"Full traceback:\n{traceback.format_exc()}")
 
         self.results.append(result)
         return result
+
+    def _detect_turbulence_model(self, test_case) -> str:
+        """Detect turbulence model from description file"""
+        # Solvers that don't use turbulence models
+        non_turbulent_solvers = [
+            'laplacianFoam', 'potentialFoam', 'scalarTransportFoam',
+            'solidFoam', 'boundaryFoam', 'dnsFoam'
+        ]
+
+        if test_case.solver in non_turbulent_solvers:
+            return 'laminar'  # Use 'laminar' instead of empty string
+
+        try:
+            with open(test_case.description_path, 'r') as f:
+                content = f.read().lower()
+
+            # Common turbulence models
+            if 'komegasst' in content or 'k-omega-sst' in content or 'k-ω-sst' in content:
+                return 'kOmegaSST'
+            elif 'kepsilon' in content or 'k-epsilon' in content or 'k-ε' in content:
+                return 'kEpsilon'
+            elif 'spalart' in content or 'sa' in content:
+                return 'SpalartAllmaras'
+            elif 'laminar' in content:
+                return 'laminar'
+            else:
+                return 'laminar'  # Default to laminar
+        except:
+            return 'laminar'
 
     def _validate_case(self, result: TestResult, test_case) -> None:
         """Run validation on a completed case"""
