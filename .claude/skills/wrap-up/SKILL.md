@@ -40,21 +40,21 @@ The argument provided is: $ARGUMENTS
 
 Do NOT assume any specific filenames. Instead, discover what exists:
 
-1. **Find all markdown files** in the repo:
+1. **Find all markdown files** in the repo (exclude virtualenvs and vendored code):
    ```
-   find . -name '*.md' -not -path './.git/*' | sort
+   find . -name '*.md' -not -path './.git/*' -not -path '*/chatcfd_venv/*' -not -path '*/node_modules/*' | sort
    ```
 
 2. **Find all HTML files** that look like reports or summaries (not application code):
    ```
-   find . -name '*.html' -not -path './.git/*' -not -path '*/node_modules/*' | sort
+   find . -name '*.html' -not -path './.git/*' -not -path '*/chatcfd_venv/*' -not -path '*/node_modules/*' | sort
    ```
 
-3. From these lists, identify documentation files that are likely candidates for update. Look for files whose names or content suggest they track:
-   - Project status, progress, or implementation state
-   - Summaries or overviews of what the project contains
-   - Reports (especially HTML reports with timestamps)
-   - READMEs at any level (root, subdirectories)
+3. From these lists, identify documentation files that are likely candidates for update. For this project, the key docs are:
+   - `README-fork.md` — fork-specific highlights, skills table, installation
+   - `ReadMe.md` — upstream original documentation (only update if upstream-relevant content changed, e.g. file structure tree)
+   - `.claude/skills/*/SKILL.md` — skill definitions
+   - Any other project-level READMEs
 
 4. **Read each candidate file** to understand its purpose and current content. Decide whether the branch's changes warrant an update to that file:
    - Does the file reference features, tools, cases, or components that this branch added/changed?
@@ -87,11 +87,13 @@ If warranted, create `.claude/skills/<name>/SKILL.md` following the format of ex
 
 ## Step 5 — Commit documentation updates
 
-1. Stage only the files that were actually changed:
+1. **Pre-commit secrets check** — Before staging, verify none of the changed files are in the secrets blocklist (see Safety rules). If `inputs/chatcfd_config.json` appears in `git status`, leave it unstaged and note to the user that it was skipped (contains API keys).
+
+2. Stage only the files that were actually changed and are safe to commit:
    ```
    git add <changed-files>
    ```
-2. Commit with a message summarizing the doc updates. Match the repo's commit message style.
+3. Commit with a message summarizing the doc updates. Match the repo's commit message style (short imperative, e.g., "Update README-fork.md with new skill descriptions").
 
 ## Step 6 — Merge to main
 
@@ -176,9 +178,28 @@ Display the final summary in the conversation using this format (pure ASCII, 70-
 
 ## Safety rules
 
+### Credential & secret protection (CRITICAL)
+
+This project uses API keys in `inputs/chatcfd_config.json` and `~/.chatcfd_env`. Leaking these keys in commits, diffs, logs, or conversation output is a serious security incident.
+
+- **Never commit files containing API keys, tokens, or passwords.** The following files are known to contain secrets and must NEVER be staged or committed, even if `git status` shows them as modified:
+  - `inputs/chatcfd_config.json`
+  - `~/.chatcfd_env`
+  - Any file matching `*.env`, `*.key`, `*.pem`, `*.secret`
+- **Never display API keys in conversation output.** When showing `git diff`, `cat`, or file contents, redact any line containing `KEY`, `TOKEN`, `SECRET`, `PASSWORD`, `API_KEY`, or URL patterns with embedded credentials (e.g., `https://<token>@github.com`). Replace the sensitive value with `[REDACTED]`.
+- **Never display git remote URLs containing tokens.** When running `git remote -v`, if the URL contains an embedded token (e.g., `https://ghp_xxx@github.com/...`), redact it to `https://[TOKEN]@github.com/...` before showing to the user.
+- **Before every `git add`**, run a pre-commit check:
+  1. List all files to be staged.
+  2. For each file, verify it is NOT in the secrets blocklist above.
+  3. If a secrets file is about to be staged, **STOP and warn the user** instead of staging it.
+- **Verify `.gitignore` coverage.** At the start of wrap-up, confirm that `.gitignore` includes `inputs/chatcfd_config.json`. If it doesn't, add it before proceeding.
+
+### General safety
+
 - **Never force-push.** Never use `--force` or `--force-with-lease`.
 - **Never auto-resolve merge conflicts.** Report them and stop.
 - **Never push unless explicitly asked.**
-- **Never commit binary output files** (`.PLT`, `.exe`, `.o`, `.bin`) unless the user specifically requests it. Warn if such files appear in `git status`.
+- **Never commit binary output files** (`.PLT`, `.exe`, `.o`, `.bin`, `.msh`) unless the user specifically requests it. Warn if such files appear in `git status`.
+- **Never commit virtualenv or cache directories** (`chatcfd_venv/`, `__pycache__/`, `.cache/`).
 - **Never delete branches** unless the user asks. After merging, the feature branch still exists — the user can delete it themselves.
 - **Preserve worktree state.** If running inside a git worktree, be aware that `git checkout` may behave differently. Run `git worktree list` first to understand the layout if checkout fails.
