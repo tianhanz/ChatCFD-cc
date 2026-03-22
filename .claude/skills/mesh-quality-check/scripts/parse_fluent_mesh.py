@@ -59,26 +59,19 @@ def parse_fluent_mesh(text: str) -> dict:
         "skewness_mean": r"Mean (?:Cell )?Skewness\s*=\s*([\d.eE+-]+)",
         "cell_squish_max": r"Maximum Cell Squish.*=\s*([\d.eE+-]+)",
         "cell_quality_min": r"Minimum Cell Quality\s*=\s*([\d.eE+-]+)",
+        "volume_change_max": r"(?:Maximum )?Volume Change\s*=\s*([\d.eE+-]+)",
     }
     for key, pattern in metric_patterns.items():
-        m = re.search(pattern, text)
+        m = re.search(pattern, text, re.IGNORECASE)
         if m:
             result["quality_metrics"][key] = float(m.group(1))
 
-    # Determine overall status based on critical metrics
-    qm = result["quality_metrics"]
-    issues = []
-    if "orthogonal_quality_min" in qm and qm["orthogonal_quality_min"] < 0.1:
-        issues.append("orthogonal_quality")
-    if "skewness_max" in qm and qm["skewness_max"] > 0.95:
-        issues.append("skewness")
-    if "aspect_ratio_max" in qm and qm["aspect_ratio_max"] > 100:
-        issues.append("aspect_ratio")
-
-    if issues:
-        result["overall_status"] = f"FAIL ({', '.join(issues)})"
-    elif qm:
-        result["overall_status"] = "OK"
+    # Volume ratio from min/max volumes (fallback if Volume Change not reported)
+    vs = result["volume_stats"]
+    if "volume_change_max" not in result["quality_metrics"] and vs.get("min") and vs.get("max"):
+        if vs["min"] > 0:
+            ratio = vs["max"] / vs["min"]
+            result["quality_metrics"]["volume_change_max"] = ratio
 
     return result
 

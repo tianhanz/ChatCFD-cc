@@ -64,13 +64,13 @@ Ratio of smallest to largest neighboring cell volumes.
 
 | Range | Status | Impact |
 |-------|--------|--------|
-| > 0.01 | PASS | Smooth volume transition |
-| 0.001–0.01 | WARNING | Steep transitions; may cause interpolation errors |
-| < 0.001 | FAIL | Extreme size jumps; numerical instability |
+| > 0.1 | PASS | Smooth volume transition |
+| 0.01–0.1 | WARNING | Steep transitions; may cause interpolation errors |
+| < 0.01 | FAIL | Extreme size jumps; numerical instability |
 
-### Face Weight (from -allGeometry)
+### Interpolation Weight (from -allGeometry)
 
-Interpolation weight balance between cells sharing a face.
+Interpolation weight balance between cells sharing a face. Also referred to as "face weight" in some OpenFOAM versions.
 
 | Range | Status | Impact |
 |-------|--------|--------|
@@ -203,7 +203,11 @@ Recommended growth ratio between successive layers: **1.1 – 1.2**
 | Aspect ratio | Aspect ratio | Similar definition |
 | Volume ratio | Volume Change | Fluent uses max neighbor ratio; OpenFOAM uses min/max |
 | Determinant | — | No direct Fluent equivalent |
-| Face weight | — | No direct Fluent equivalent |
+| Interpolation weight | — | No direct Fluent equivalent |
+
+**Cross-solver consistency note**: The OpenFOAM non-orthogonality WARNING threshold of 65° corresponds to `cos(65°) ≈ 0.42` in Fluent's Orthogonal Quality scale. Fluent's PASS threshold is 0.3, so a mesh at 72° non-orthogonality would be WARNING in OpenFOAM but still PASS in Fluent. Engineers working across both solvers should be aware of this gap and use the stricter criterion when in doubt.
+
+**Aspect ratio discrepancy**: OpenFOAM PASS < 100 vs. Fluent PASS < 20. The OpenFOAM threshold accommodates highly anisotropic boundary layer cells (which are normal in wall-resolved simulations). The Fluent threshold is more conservative and intended for the bulk flow region. When evaluating boundary layer meshes in Fluent, high aspect ratio cells near walls should be assessed in context rather than flagged as failures.
 
 ---
 

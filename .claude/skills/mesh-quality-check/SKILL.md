@@ -86,9 +86,9 @@ python /home/developer/.claude/skills/mesh-quality-check/scripts/evaluate_qualit
 | Skewness | < 4.0 | 4.0–8.0 | > 8.0 |
 | Aspect ratio | < 100 | 100–1000 | > 1000 |
 | Min volume | > 0 | — | ≤ 0 (negative volumes) |
-| Volume ratio | > 0.01 | 0.001–0.01 | < 0.001 |
+| Volume ratio | > 0.1 | 0.01–0.1 | < 0.01 |
 | Min determinant | > 0.1 | 0.001–0.1 | < 0.001 |
-| Min face weight | > 0.2 | 0.05–0.2 | < 0.05 |
+| Min interpolation weight | > 0.2 | 0.05–0.2 | < 0.05 |
 
 ### Fluent Metrics
 

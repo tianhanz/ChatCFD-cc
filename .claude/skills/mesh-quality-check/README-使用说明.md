@@ -115,9 +115,9 @@ python3 ~/.claude/skills/mesh-quality-check/scripts/evaluate_quality.py parsed.j
 | **Skewness** | < 4.0 | 4.0–8.0 | > 8.0 | 面插值点偏离面中心的程度 |
 | **Aspect Ratio** | < 100 | 100–1000 | > 1000 | 单元最长/最短边比 |
 | **Min Volume** | > 0 | — | ≤ 0 | 负体积 = 倒置单元，必须修复 |
-| **Volume Ratio** | > 0.01 | 0.001–0.01 | < 0.001 | 相邻单元体积比（需 -allGeometry） |
+| **Volume Ratio** | > 0.1 | 0.01–0.1 | < 0.01 | 相邻单元体积比（需 -allGeometry） |
 | **Determinant** | > 0.1 | 0.001–0.1 | < 0.001 | 单元变形程度（需 -allGeometry） |
-| **Face Weight** | > 0.2 | 0.05–0.2 | < 0.05 | 插值权重均衡性（需 -allGeometry） |
+| **Interpolation Weight** | > 0.2 | 0.05–0.2 | < 0.05 | 插值权重均衡性（需 -allGeometry） |
 
 ### 4.2 Fluent 指标阈值
 

@@ -30,7 +30,7 @@ OF_CRITERIA = {
         "label": "Aspect Ratio (max)",
     },
     "min_volume_ratio": {
-        "pass": 0.01, "warn": 0.001,
+        "pass": 0.1, "warn": 0.01,
         "unit": "", "direction": "higher_better",
         "label": "Volume Ratio (min)",
     },
@@ -42,7 +42,7 @@ OF_CRITERIA = {
     "min_face_weight": {
         "pass": 0.2, "warn": 0.05,
         "unit": "", "direction": "higher_better",
-        "label": "Face Weight (min)",
+        "label": "Interpolation Weight (min)",
     },
 }
 
@@ -70,6 +70,11 @@ FL_CRITERIA = {
         "unit": "", "direction": "lower_better",
         "label": "Cell Squish (max)",
     },
+    "volume_change_max": {
+        "pass": 5, "warn": 10,
+        "unit": "", "direction": "lower_better",
+        "label": "Volume Change (max)",
+    },
 }
 
 REMEDIES = {
@@ -84,6 +89,7 @@ REMEDIES = {
     "skewness_max": "Refine cells near sharp geometric features. Improve transition ratios. Use size gradients < 1.2.",
     "aspect_ratio_max": "Reduce boundary layer growth ratio. Check for very thin cells in narrow gaps.",
     "cell_squish_max": "Cells are excessively compressed. Re-mesh with better quality controls. Check geometry for pinch points.",
+    "volume_change_max": "Adjacent cell volume ratio too large. Smooth size transitions; keep growth ratio <= 1.2. Large volume jumps degrade interpolation accuracy and multigrid solver efficiency.",
     "negative_volumes": "Inverted cells detected — re-mesh the affected region. Check geometry for self-intersections or overlapping surfaces.",
 }
 
@@ -104,6 +110,25 @@ def classify(value, criterion):
             return "WARNING"
         else:
             return "FAIL"
+
+
+def _openfoam_notes(geom: dict) -> list:
+    """Generate advisory notes about data completeness and context."""
+    notes = []
+    # Warn if extended metrics are missing
+    extended_keys = ("min_volume_ratio", "determinant", "interpolation_weight", "face_twist")
+    if not any(k in geom for k in extended_keys):
+        notes.append("Extended metrics not available. Rerun: checkMesh -allGeometry -allTopology")
+    # Report high-AR cell count if available
+    har = geom.get("high_aspect_ratio_cells")
+    if har:
+        notes.append(f"{har['count']} cells exceed aspect ratio {har['threshold']}. "
+                      "Check if these are in boundary layers (acceptable) or core flow (problematic).")
+    # Report severely non-orthogonal face count
+    sno = geom.get("severely_non_orthogonal_faces")
+    if sno:
+        notes.append(f"{sno['count']} faces exceed {sno['threshold']}° non-orthogonality.")
+    return notes
 
 
 def evaluate_openfoam(data: dict) -> dict:
@@ -170,7 +195,8 @@ def evaluate_openfoam(data: dict) -> dict:
             "remedy": REMEDIES["negative_volumes"],
         })
 
-    return {"solver": "OpenFOAM", "overall": overall, "metrics": results}
+    return {"solver": "OpenFOAM", "overall": overall, "metrics": results,
+            "notes": _openfoam_notes(geom)}
 
 
 def evaluate_fluent(data: dict) -> dict:
@@ -271,6 +297,14 @@ def format_report(evaluation: dict, raw_data: dict) -> str:
                 topo_icon = "✅" if val == "OK" or (key == "regions" and val == 1) else "❌"
                 lines.append(f"- {label}: {topo_icon} {val}")
             lines.append("")
+
+    # Notes (data completeness, context)
+    notes = evaluation.get("notes", [])
+    if notes:
+        lines.append("## Notes")
+        for n in notes:
+            lines.append(f"- {n}")
+        lines.append("")
 
     # Recommendations
     remedies = [m for m in evaluation["metrics"] if m.get("remedy")]
