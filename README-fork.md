@@ -19,8 +19,10 @@ This is a community-maintained fork of ChatCFD with customizations and improveme
 
 | Skill | Description |
 |-------|-------------|
-| `mesh-quality-check` | CFD mesh quality checker for OpenFOAM (`checkMesh`) and Fluent. Parses logs, evaluates metrics (non-orthogonality, skewness, aspect ratio, y+, etc.) against standard thresholds, generates PASS/WARNING/FAIL reports with remediation guidance. See [detailed usage guide](https://github.com/your-org/ChatCFD-cc/blob/main/.claude/skills/mesh-quality-check/README-使用说明.md). |
-| `wrap-up` | Branch finalization — discovers and updates docs, commits, merges to main, and optionally pushes. |
+| `mesh-quality-check` | CFD mesh quality checker for OpenFOAM (`checkMesh`) and Fluent. Parses logs, evaluates metrics (non-orthogonality, skewness, aspect ratio, y+, volume ratio, etc.) against standard thresholds, generates PASS/WARNING/FAIL reports with remediation guidance. v2.0: reviewed by Gemini/GPT, tightened volume ratio thresholds, added cross-solver consistency notes. See [detailed usage guide (Chinese)](.claude/skills/mesh-quality-check/README-使用说明.md). |
+| `wrap-up` | Branch finalization — discovers and updates docs, commits, merges to main, and optionally pushes. Includes credential protection. |
+| `gemini-review` | Cross-review skill using Gemini-2.5-Pro for rigorous physics/numerics validation of CFD tools and scripts. |
+| `gpt-review` | Cross-review skill using GPT-5.2 for first-principles physics review and creative alternatives analysis. |
 
 ### Installation
 
