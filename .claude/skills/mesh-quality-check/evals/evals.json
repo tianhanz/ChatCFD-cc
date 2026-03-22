@@ -1,0 +1,23 @@
+{
+  "skill_name": "mesh-quality-check",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "我跑了一个pitzDaily的checkMesh，帮我看看网格质量怎么样，有没有什么问题需要修。这是checkMesh的输出日志。",
+      "expected_output": "应该报告所有指标PASS，给出绿色通过的质量报告，包含网格统计（12400 cells, hex为主）和各项指标数值",
+      "files": ["evals/test_openfoam_good.log"]
+    },
+    {
+      "id": 1,
+      "prompt": "snappyHexMesh生成的motorBike外流场网格checkMesh报了2个错误，帮我分析一下问题在哪，怎么修。日志在下面。",
+      "expected_output": "应该识别出FAIL状态，指出三个关键问题：(1)负体积3个cells (2)最大aspect ratio 1523超标 (3)非正交性82度超过80度阈值。给出具体修复建议。",
+      "files": ["evals/test_openfoam_bad.log"]
+    },
+    {
+      "id": 2,
+      "prompt": "我在Fluent里导入了一个NACA翼型的网格，mesh check的结果如下。帮我评估一下质量，我打算用k-omega SST模型做定常模拟。",
+      "expected_output": "应该识别出多个FAIL：正交质量0.088<0.1, aspect ratio 156>100, skewness 0.92在warning范围, squish 0.765在warning范围。同时应该提醒k-omega SST需要y+≈1的近壁网格要求。",
+      "files": ["evals/test_fluent_mixed.log"]
+    }
+  ]
+}

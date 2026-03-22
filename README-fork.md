@@ -15,6 +15,13 @@ This is a community-maintained fork of ChatCFD with customizations and improveme
 - ✅ Enhanced environment variable management
 - ✅ Additional documentation
 
+### Claude Code Skills (`.claude/skills/`)
+
+| Skill | Description |
+|-------|-------------|
+| `mesh-quality-check` | CFD mesh quality checker for OpenFOAM (`checkMesh`) and Fluent. Parses logs, evaluates metrics (non-orthogonality, skewness, aspect ratio, y+, etc.) against standard thresholds, generates PASS/WARNING/FAIL reports with remediation guidance. See [detailed usage guide](https://github.com/your-org/ChatCFD-cc/blob/main/.claude/skills/mesh-quality-check/README-使用说明.md). |
+| `wrap-up` | Branch finalization — discovers and updates docs, commits, merges to main, and optionally pushes. |
+
 ### Installation
 
 Quick start with pre-configured environment:
